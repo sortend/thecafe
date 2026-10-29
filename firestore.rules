@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'theyaari@cafe.com';
+    }
+
+    // Public read, only admin can write
+    match /settings/{id}   { allow read: if true; allow write: if isAdmin(); }
+    match /content/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /categories/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /menu/{id}       { allow read: if true; allow write: if isAdmin(); }
+    match /gallery/{id}    { allow read: if true; allow write: if isAdmin(); }
+
+    // One review per logged-in customer (doc id = their uid)
+    match /reviews/{id} {
+      allow read: if true;
+      allow create, update: if request.auth != null && request.auth.uid == id
+        && request.resource.data.rating is int
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && request.resource.data.text.size() <= 500;
+      allow delete: if isAdmin() || (request.auth != null && request.auth.uid == id);
+    }
+
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if isAdmin();
+    }
+
+    match /orders/{id} {
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read: if isAdmin() || (request.auth != null && resource.data.uid == request.auth.uid);
+      allow update, delete: if isAdmin();
+    }
+  }
+}
