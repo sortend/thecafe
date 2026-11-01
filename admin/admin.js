@@ -10,6 +10,8 @@ const col = n => fs.collection(db, n);
 const ts = x => x?.seconds || 0;
 const fmt = x => x?.seconds ? new Date(x.seconds * 1000).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' }) : 'Just now';
 const toast = (m, t = 'ok') => { const e = document.createElement('div'); e.className = 'toast ' + t; e.textContent = m; $('#toast').append(e); setTimeout(() => e.remove(), 3000); };
+const ico = n => `<svg class="i" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const loadLeaflet = () => window.L ? Promise.resolve() : (window.__lp ||= new Promise((res, rej) => { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.append(l); const sc = document.createElement('script'); sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js'; sc.onload = res; sc.onerror = () => { window.__lp = null; rej(); }; document.head.append(sc); }));
 const lines = s => s.split('\n').map(x => x.trim()).filter(Boolean);
 
 const S = { orders: [], menu: [], cats: [], gallery: [], reviews: [], users: [], delivery: {}, home: {}, about: {}, tab: 'dash', ofilter: 'all', ready: false };
@@ -17,7 +19,7 @@ let unsubs = [];
 
 /* ───────── login ───────── */
 function showLogin(msg = '') {
-  $('#root').innerHTML = `<div class="login"><form id="lf"><h1>Admin login</h1><p>The Yaari Cafe control panel</p>
+  $('#root').innerHTML = `<div class="login"><form id="lf"><div class="mark">${ico('cup')}</div><h1>Admin login</h1><p>The Yaari Cafe control panel</p>
     ${msg ? `<div class="err">${esc(msg)}</div>` : ''}
     <div class="field"><label for="e">Email</label><input id="e" type="email" autocomplete="username" required></div>
     <div class="field"><label for="p">Password</label><input id="p" type="password" autocomplete="current-password" required></div>
@@ -57,15 +59,15 @@ const MAP = { orders: ['dash', 'orders'], menu: ['dash', 'menu'], gallery: ['gal
 function refresh(kind) { renderSide(); if (kind === 'menu') window.__catDraw?.(); if (S.ready && (MAP[kind] || []).includes(S.tab)) render(); }
 
 /* ───────── shell ───────── */
-const TABS = [['dash', 'Dashboard'], ['orders', 'Orders'], ['menu', 'Menu items'], ['gallery', 'Gallery'], ['reviews', 'Reviews'], ['pages', 'Page content'], ['delivery', 'Delivery settings'], ['users', 'Customers']];
+const TABS = [['dash', 'Dashboard', 'dash'], ['orders', 'Orders', 'bag'], ['menu', 'Menu items', 'menu'], ['gallery', 'Gallery', 'image'], ['reviews', 'Reviews', 'star'], ['pages', 'Page content', 'edit'], ['delivery', 'Delivery settings', 'pin'], ['users', 'Customers', 'users']];
 function shell() {
   $('#root').innerHTML = `<div class="shell"><aside id="side"></aside><main id="main"></main></div>`;
   $('#side').onclick = e => { const b = e.target.closest('[data-tab]'); if (b) { S.tab = b.dataset.tab; renderSide(); render(); } if (e.target.id === 'out') au.signOut(auth); };
 }
 function renderSide() {
   const side = $('#side'); if (!side) return; const pend = S.orders.filter(o => o.status === 'confirmed').length;
-  side.innerHTML = `<div class="brand"><i>☕</i>Yaari admin</div>` + TABS.map(([k, l]) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}">${l}${k === 'orders' && pend ? `<span class="dot">${pend}</span>` : ''}</button>`).join('') +
-    `<div class="foot">${esc(ADMIN_EMAIL)}<br><button class="btn btn-ghost btn-sm" id="out" style="margin-top:8px">Logout</button></div>`;
+  side.innerHTML = `<div class="brand"><span class="mk">${ico('cup')}</span><span>Yaari admin<small>Control panel</small></span></div>` + TABS.map(([k, l, ic]) => `<button class="tab ${S.tab === k ? 'on' : ''}" data-tab="${k}">${ico(ic)}${l}${k === 'orders' && pend ? `<span class="dot">${pend}</span>` : ''}</button>`).join('') +
+    `<div class="foot">${esc(ADMIN_EMAIL)}<br><button class="btn btn-ghost btn-sm" id="out" style="margin-top:10px">${ico('out')}Logout</button></div>`;
 }
 function render() { renderSide(); const m = $('#main'); if (!m) return; ({ dash, orders, menu, gallery, reviews, pages, delivery, users }[S.tab])(m); }
 
@@ -180,7 +182,7 @@ function users(m) {
 /* ───────── page content ───────── */
 function pages(m) {
   const h = S.home, a = S.about;
-  const feats = (h.features || [{ icon: '☕', title: 'Brewed to order', text: 'Small-batch coffee and chai, made when you order it.' }, { icon: '🛵', title: 'Home delivery', text: 'Hot food from our kitchen to your doorstep.' }, { icon: '🥗', title: 'Honest ingredients', text: 'Seasonal produce and no shortcuts.' }, { icon: '💳', title: 'Easy payments', text: 'UPI, cards and netbanking through Razorpay.' }]).map(f => `${f.icon} | ${f.title} | ${f.text}`).join('\n');
+  const feats = (h.features || [{ icon: 'cup', title: 'Brewed to order', text: 'Small-batch coffee and chai, made when you order it.' }, { icon: 'box', title: 'Home delivery', text: 'Hot food from our kitchen to your doorstep.' }, { icon: 'leaf', title: 'Honest ingredients', text: 'Seasonal produce and no shortcuts in the kitchen.' }, { icon: 'card', title: 'Easy payments', text: 'UPI, cards and netbanking through Razorpay.' }]).map(f => `${f.icon} | ${f.title} | ${f.text}`).join('\n');
   const hours = (a.hours || [{ days: 'Monday to Friday', time: '9:00 AM – 11:00 PM' }, { days: 'Saturday and Sunday', time: '8:00 AM – 12:00 AM' }]).map(x => `${x.days} | ${x.time}`).join('\n');
   const team = (a.team || [{ name: 'Head chef', role: 'Kitchen' }, { name: 'Barista lead', role: 'Coffee bar' }, { name: 'Delivery captain', role: 'Home delivery' }]).map(x => `${x.name} | ${x.role}`).join('\n');
   m.innerHTML = `<h1>Page content</h1><p class="sub">Edit the text on your pages. The pages themselves (Home, Menu, Order, Gallery, Reviews, About, Profile) are fixed and cannot be deleted. Menu items, gallery photos and reviews are managed in their own tabs.</p>
@@ -188,7 +190,7 @@ function pages(m) {
       <div class="field"><label>Announcement banner</label><input id="hb" value="${esc(h.banner || '')}" placeholder="e.g. Free dessert on orders above ₹500 this weekend. Leave empty to hide."></div>
       <div class="field"><label>Main headline</label><input id="ht" value="${esc(h.heroTitle || 'Chai, coffee and the people you love')}"></div>
       <div class="field"><label>Intro text</label><textarea id="hs" rows="2">${esc(h.heroSub || "Fresh food, slow brews and warm corners. Order from The Yaari Cafe and we'll bring it to your door.")}</textarea></div>
-      <div class="field"><label>Highlight cards (one per line)</label><textarea id="hf" rows="5">${esc(feats)}</textarea><small>Format: emoji | title | short text. Add a line to add a card, remove a line to delete one.</small></div>
+      <div class="field"><label>Highlight cards (one per line)</label><textarea id="hf" rows="5">${esc(feats)}</textarea><small>Format: icon | title | short text. Icons: cup, box, leaf, card, clock, heart, star, pin, bag (or any emoji). Add a line to add a card, remove a line to delete one.</small></div>
       <button class="btn btn-primary" id="sh">Save home page</button></div>
     <div class="panel"><h3>About page</h3>
       <div class="field"><label>Heading</label><input id="at" value="${esc(a.title || 'A corner café built for long conversations')}"></div>
@@ -197,7 +199,7 @@ function pages(m) {
       <div class="row3"><div class="field"><label>Phone</label><input id="ap" value="${esc(a.phone || '')}"></div><div class="field"><label>Email</label><input id="ae" value="${esc(a.email || 'theyaari@cafe.com')}"></div><div class="field"><label>Address</label><input id="aa" value="${esc(a.address || '')}"></div></div>
       <div class="field"><label>Team (one per line)</label><textarea id="at2" rows="4">${esc(team)}</textarea><small>Format: name | role</small></div>
       <button class="btn btn-primary" id="sa">Save about page</button></div>`;
-  $('#sh').onclick = async () => { const features = lines($('#hf').value).map(l => { const [icon, title, ...t] = l.split('|').map(x => x.trim()); return { icon: icon || '⭐', title: title || '', text: t.join(' | ') }; });
+  $('#sh').onclick = async () => { const features = lines($('#hf').value).map(l => { const [icon, title, ...t] = l.split('|').map(x => x.trim()); return { icon: icon || 'star', title: title || '', text: t.join(' | ') }; });
     await save('content', 'home', { banner: $('#hb').value.trim(), heroTitle: $('#ht').value.trim(), heroSub: $('#hs').value.trim(), features }); };
   $('#sa').onclick = async () => { const pair = (s, a, b) => lines(s).map(l => { const [x, ...y] = l.split('|').map(z => z.trim()); return { [a]: x, [b]: y.join(' | ') }; });
     await save('content', 'about', { title: $('#at').value.trim(), story: $('#as').value, hours: pair($('#ah').value, 'days', 'time'), phone: $('#ap').value.trim(), email: $('#ae').value.trim(), address: $('#aa').value.trim(), team: pair($('#at2').value, 'name', 'role') }); };
@@ -219,7 +221,8 @@ function delivery(m) {
       <div id="amap"></div><small id="ac" style="color:var(--muted)"></small>
       <div style="margin-top:18px"><button class="btn btn-primary" id="ds">Save delivery settings</button></div></div>`;
   let lat = d.cafeLat, lng = d.cafeLng;
-  setTimeout(() => {
+  loadLeaflet().then(() => {
+    if (!$('#amap')) return;
     amap = L.map('amap').setView([lat, lng], 14); L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(amap);
     acircle = L.circle([lat, lng], { radius: d.radiusKm * 1000, color: '#0E6B5C', weight: 1.5, fillOpacity: .07 }).addTo(amap);
     amarker = L.marker([lat, lng], { draggable: true, icon: L.divIcon({ className: 'pin', html: '<span></span>', iconSize: [26, 26], iconAnchor: [13, 26] }) }).addTo(amap);
@@ -229,5 +232,5 @@ function delivery(m) {
     $('#as1').onclick = async () => { const q = $('#aq').value.trim(); if (!q) return; const r = await (await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(q)}`)).json(); if (!r[0]) return toast('Place not found', 'bad'); set(+r[0].lat, +r[0].lon); amap.setView([lat, lng], 16); };
     $('#am1').onclick = () => navigator.geolocation.getCurrentPosition(p => { set(p.coords.latitude, p.coords.longitude); amap.setView([lat, lng], 17); }, () => toast('Location access denied', 'bad'), { enableHighAccuracy: true });
     $('#ds').onclick = () => save('settings', 'delivery', { enabled: $('#de').checked, cafeName: $('#dn').value.trim() || 'The Yaari Cafe', charge: Math.max(0, parseFloat($('#dc').value) || 0), radiusKm: Math.max(.5, parseFloat($('#dr').value) || 5), minOrder: Math.max(0, parseFloat($('#dm').value) || 0), cafeLat: lat, cafeLng: lng });
-  }, 50);
+  }).catch(() => toast('Map could not load. Check your internet.', 'bad'));
 }

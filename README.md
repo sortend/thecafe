@@ -24,3 +24,8 @@ firebase hosting:sites:create theyaari-admin
 Then in firebase.json use two targets: website/ -> theyaari, admin/ -> theyaari-admin
 firebase deploy --only hosting
 Add both domains to Authorized domains.
+
+## Admin tips (new UI)
+- Page content > Highlight cards: use `icon | title | text`. Icons: cup, box, leaf, card, clock, heart, star, pin, bag (or any emoji).
+- Menu items > "Load sample menu" fills a starter menu you can edit.
+- Razorpay Key ID: `website/firebase-config.js` (RAZORPAY_KEY_ID). Until it is set, the Pay button shows "Payments are not set up yet".
